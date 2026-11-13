@@ -1,11 +1,8 @@
-
 # Reliability, Retry and Recovery
 
 ## 1. Rerun Safety
 
-The pipeline overwrites the existing Parquet output instead of appending records.
-
-Running the same input again does not create duplicate output records.
+The pipeline overwrites existing Parquet and quarantine outputs instead of appending records. Reprocessing the same input does not create duplicate output records.
 
 ## 2. Failure Handling
 
@@ -18,22 +15,29 @@ If an unexpected error occurs:
 
 ## 3. Rejected Records
 
-Invalid transactions are stored separately in the quarantine CSV file with rejection reasons.
-
-Valid records continue through the publishing process.
+Invalid transactions are stored separately in the quarantine CSV file with rejection reasons. Valid transactions continue through publishing.
 
 ## 4. Retry Strategy
 
-Automatic retry is not implemented in the current version.
+Automatic retry is not implemented.
 
-For recovery, the operator can correct the input or environment issue and rerun the pipeline.
+The operator can correct the input or environment issue and rerun the pipeline. The pipeline overwrites previous outputs.
 
-## 5. Partial Failure Limitation
+## 5. Partial Failure Recovery
 
-Publishing currently writes the Parquet and quarantine outputs separately. It does not provide an atomic transaction across both files.
+Publishing first creates temporary output files and backups of existing outputs.
 
-A production implementation could use temporary output files, atomic replacement, run-specific folders and checkpoint-based recovery.
+If publishing fails after one output has been replaced, the pipeline attempts to restore the previous output using its backup.
+
+This is best-effort rollback, not a fully atomic transaction across both files. Recovery can still require operator intervention if rollback itself fails.
 
 ## 6. Backfill
 
 Historical input files can be processed again by updating the input path and rerunning the pipeline.
+
+## 7. Known Limitations
+
+- Automatic retry is not implemented.
+- There is no distributed transaction across output files.
+- External reference-master validation is not implemented.
+- Rollback is best-effort and depends on successful file operations.

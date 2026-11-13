@@ -1,5 +1,6 @@
 
 import os
+import shutil
 import pandas as pd
 
 
@@ -8,42 +9,65 @@ def publish_transactions(valid_df, rejected_df):
     os.makedirs("outputs", exist_ok=True)
     os.makedirs("data/quarantine", exist_ok=True)
 
-    valid_path = "outputs/transactions.parquet"
-    rejected_path = "data/quarantine/rejected_transactions.csv"
+    paths = [
+        ("outputs/transactions.parquet", valid_df, "parquet"),
+        ("data/quarantine/rejected_transactions.csv", rejected_df, "csv")
+    ]
 
-    valid_temp = valid_path + ".tmp"
-    rejected_temp = rejected_path + ".tmp"
+    temp_files = []
+    backups = {}
+    published = []
 
     try:
+        # Prepare temporary outputs and backups
+        for path, df, file_type in paths:
 
-        # Write temporary output files first
-        valid_df.to_parquet(
-            valid_temp,
-            index=False
-        )
+            temp = path + ".tmp"
+            backup = path + ".bak"
 
-        rejected_df.to_csv(
-            rejected_temp,
-            index=False
-        )
+            if file_type == "parquet":
+                df.to_parquet(temp, index=False)
+            else:
+                df.to_csv(temp, index=False)
 
-        # Replace previous outputs after successful writes
-        os.replace(valid_temp, valid_path)
-        os.replace(rejected_temp, rejected_path)
+            temp_files.append(temp)
+
+            if os.path.exists(path):
+                shutil.copy2(path, backup)
+                backups[path] = backup
+            else:
+                backups[path] = None
+
+        # Publish outputs
+        for path, df, file_type in paths:
+            temp = path + ".tmp"
+            os.replace(temp, path)
+            published.append(path)
 
         print("Publishing completed!")
         print("Valid records published:", len(valid_df))
         print("Rejected records saved:", len(rejected_df))
 
     except Exception:
+        # Roll back already published outputs
+        for path in reversed(published):
 
-        # Remove incomplete temporary files
-        for path in [valid_temp, rejected_temp]:
+            backup = backups[path]
 
-            if os.path.exists(path):
+            if backup and os.path.exists(backup):
+                os.replace(backup, path)
+            elif os.path.exists(path):
                 os.remove(path)
 
         raise
+
+    finally:
+        # Remove temporary and unused backup files
+        for path, df, file_type in paths:
+            for suffix in [".tmp", ".bak"]:
+                file = path + suffix
+                if os.path.exists(file):
+                    os.remove(file)
 
 
 if __name__ == "__main__":
@@ -53,9 +77,7 @@ if __name__ == "__main__":
     from transformation import transform_transactions
 
     df = ingest_transactions("data/raw/transactions.csv")
-
     valid_df, rejected_df = validate_transactions(df)
-
     transformed_df = transform_transactions(valid_df)
 
     publish_transactions(transformed_df, rejected_df)

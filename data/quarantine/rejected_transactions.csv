@@ -1,1 +1,1 @@
-
+transaction_id,account_id,transaction_type,amount,currency,event_time,reference_id,balance_before,balance_after,rejection_reason

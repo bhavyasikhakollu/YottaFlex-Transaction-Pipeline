@@ -1,4 +1,5 @@
 
+
 import os
 import uuid
 import logging
@@ -10,6 +11,31 @@ from validation import validate_transactions
 from transformation import transform_transactions
 from publishing import publish_transactions
 from metrics import calculate_metrics
+
+
+def run_with_retry(operation, operation_name, max_attempts=3, delay=2):
+    """Retry temporary I/O failures up to three times."""
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return operation()
+
+        except (OSError, TimeoutError, ConnectionError):
+            logging.exception(
+                "%s failed on attempt %s",
+                operation_name,
+                attempt
+            )
+
+            if attempt == max_attempts:
+                raise
+
+            print(
+                f"Retrying {operation_name}: "
+                f"attempt {attempt + 1}/{max_attempts}"
+            )
+
+            time.sleep(delay)
 
 
 def run_pipeline():
@@ -25,25 +51,38 @@ def run_pipeline():
 
     run_id = str(uuid.uuid4())
     start_time = datetime.now()
-    start_clock = time.perf_counter()
-
-    print("\n--- PIPELINE STARTED ---")
-    print("Run ID:", run_id)
-    print("Start time:", start_time)
+    status = "FAILED"
 
     logging.info("Pipeline started. Run ID: %s", run_id)
 
-    status = "FAILED"
-
     try:
-        df = ingest_transactions("data/raw/transactions.csv")
+        print("Starting transaction pipeline...")
+        print("Run ID:", run_id)
 
+        # 1. Ingestion with retry
+        df = run_with_retry(
+            lambda: ingest_transactions(
+                "data/raw/transactions.csv"
+            ),
+            "data ingestion"
+        )
+
+        # 2. Validation
         valid_df, rejected_df = validate_transactions(df)
 
+        # 3. Transformation
         transformed_df = transform_transactions(valid_df)
 
-        publish_transactions(transformed_df, rejected_df)
+        # 4. Publishing with retry
+        run_with_retry(
+            lambda: publish_transactions(
+                transformed_df,
+                rejected_df
+            ),
+            "publishing"
+        )
 
+        # 5. Metrics
         calculate_metrics(
             len(df),
             len(valid_df),
@@ -52,28 +91,31 @@ def run_pipeline():
 
         status = "SUCCESS"
 
-        print("\n--- PIPELINE COMPLETED ---")
+        print("Pipeline completed successfully.")
         print("Total records:", len(df))
         print("Valid records:", len(valid_df))
         print("Rejected records:", len(rejected_df))
 
     except Exception:
-        logging.exception("Pipeline failed. Run ID: %s", run_id)
+        logging.exception(
+            "Pipeline failed. Run ID: %s",
+            run_id
+        )
         print("Pipeline failed. Check outputs/pipeline.log")
         raise
 
     finally:
-        end_time = datetime.now()
-        duration = time.perf_counter() - start_clock
-
-        print("Status:", status)
-        print("End time:", end_time)
-        print("Execution time:", round(duration, 2), "seconds")
+        duration = (datetime.now() - start_time).total_seconds()
 
         logging.info(
-            "Pipeline ended. Run ID: %s | Status: %s | Duration: %.2f seconds",
-            run_id, status, duration
+            "Pipeline finished. Run ID: %s | Status: %s | Duration: %.2f seconds",
+            run_id,
+            status,
+            duration
         )
+
+        print("Pipeline status:", status)
+        print(f"Execution time: {duration:.2f} seconds")
 
 
 if __name__ == "__main__":

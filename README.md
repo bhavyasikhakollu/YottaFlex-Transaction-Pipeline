@@ -1,4 +1,4 @@
-# YottaFlex Transaction Pipeline
+﻿# YottaFlex Transaction Pipeline
 
 ## 1. Project Overview
 
@@ -20,12 +20,12 @@ The pipeline also generates operational metrics, logs execution details and supp
 
 ## 3. Technologies Used
 
-- Python – Main programming language
-- Pandas – Data processing and validation
-- PyArrow – Parquet file support
-- DuckDB – Data querying and analysis
-- Pytest – Automated testing
-- Git – Version control
+- Python â€“ Main programming language
+- Pandas â€“ Data processing and validation
+- PyArrow â€“ Parquet file support
+- DuckDB â€“ Data querying and analysis
+- Pytest â€“ Automated testing
+- Git â€“ Version control
 
 ## 4. Pipeline Workflow
 
@@ -147,7 +147,7 @@ pytest -v
 | Rejected transactions | 0 |
 | Success rate | 100% |
 | Reconciliation | PASSED |
-| Automated tests | 10 PASSED |
+| Automated tests | 14 PASSED |
 
 ### DuckDB Report
 
@@ -162,7 +162,7 @@ pytest -v
 
 ## 10. Testing and Reliability
 
-- 10 automated tests passed using Pytest.
+- 14 automated tests passed using Pytest.
 - Tested duplicate transaction IDs.
 - Tested invalid transaction amounts and currencies.
 - Tested missing required values.
@@ -189,9 +189,9 @@ Automatic retries and atomic publishing across both output files are not impleme
 
 Additional project documentation is available in the `docs/` folder:
 
-- `architecture.md` – Pipeline architecture and components.
-- `data_dictionary.md` – Column names, data types and descriptions.
-- `reliability.md` – Rerun safety, failure handling, retry and recovery.
+- `architecture.md` â€“ Pipeline architecture and components.
+- `data_dictionary.md` â€“ Column names, data types and descriptions.
+- `reliability.md` â€“ Rerun safety, failure handling, retry and recovery.
 
 ## 13. Conclusion
 
@@ -200,3 +200,16 @@ The YottaFlex Transaction Pipeline demonstrates an end-to-end transaction proces
 It includes data ingestion, validation, transformation, quarantine handling, Parquet publishing, operational metrics, reconciliation and automated testing.
 
 The project focuses on data quality, reliability, traceability and repeatable processing.
+
+
+### Performance Measurement
+
+A local execution processed 100,020 transactions in 30.65 seconds.
+
+| Metric | Result |
+|---|---:|
+| Records processed | 100,020 |
+| Execution time | 30.65 seconds |
+| Throughput | Approximately 3,265 records/second |
+
+Performance may vary depending on hardware and execution environment.

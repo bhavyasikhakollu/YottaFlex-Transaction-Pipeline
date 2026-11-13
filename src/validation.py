@@ -1,4 +1,5 @@
 
+
 import math
 import pandas as pd
 
@@ -214,7 +215,15 @@ def validate_transactions(df):
         else:
             valid_records.append(record)
 
-    valid_df = pd.DataFrame(valid_records)
-    rejected_df = pd.DataFrame(rejected_records)
+    # 6. Create DataFrames with consistent columns
+    valid_df = pd.DataFrame(
+        valid_records,
+        columns=df.columns
+    )
+
+    rejected_df = pd.DataFrame(
+        rejected_records,
+        columns=list(df.columns) + ["rejection_reason"]
+    )
 
     return valid_df, rejected_df

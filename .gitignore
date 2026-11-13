@@ -1,5 +1,22 @@
+# Virtual environment
 venv/
-.pytest_cache/
+.venv/
+
+# Python cache
 __pycache__/
-*.pyc
-outputs/pipeline.log
+*.py[cod]
+.pytest_cache/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Environment secrets
+.env
+
+# IDE files
+.vscode/
+.idea/
